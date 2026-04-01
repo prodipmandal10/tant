@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# Colors for premium terminal design
+GREEN="\e[32m"
+RED="\e[31m"
+BLUE="\e[34m"
+YELLOW="\e[33m"
+CYAN="\e[36m"
+MAGENTA="\e[35m"
+RESET="\e[0m"
+
+# Database Configuration (CODEXAUM ERP)
+DB_USER="admin"
+DB_PASS="12345"
+DB_NAME="codexaum_erp"
+
+while true; do
+    clear
+    echo -e "${YELLOW}=====================================================${RESET}"
+    echo -e "${MAGENTA}                 👑 MADE BY PRODIP 👑                ${RESET}"
+    echo -e "${YELLOW}=====================================================${RESET}"
+    echo -e "${GREEN}      🌟 SaaS ERP MASTER MANAGER V4.0 🌟      ${RESET}"
+    echo -e "${BLUE}=====================================================${RESET}"
+    echo -e "${CYAN}1) 🏫 SHOW ALL REGISTERED SCHOOLS (Live Data)${RESET}"
+    echo -e "${CYAN}2) ➕ ADD A NEW SCHOOL (Auto SaaS Setup)${RESET}"
+    echo -e "${CYAN}3) 🗄️  SMART DB TREE VIEW (Easy Read)${RESET}"
+    echo -e "${BLUE}-----------------------------------------------------${RESET}"
+    echo -e "${YELLOW}4) 🛠️  INITIAL SERVER SETUP (Apache, PHP, MySQL)${RESET}"
+    echo -e "${YELLOW}5) 🚀 BACKUP CODEXAUM DATABASE (Export SQL)${RESET}"
+    echo -e "${RED}0) ❌ EXIT${RESET}"
+    echo -e "${BLUE}=====================================================${RESET}"
+    read -p "Select an option [0-5]: " choice
+
+    case $choice in
+        1)
+            echo -e "\n${YELLOW}[*] 🏫 LIST OF ALL REGISTERED SCHOOLS:${RESET}"
+            # -t flag is used for beautiful table layout in terminal
+            sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -t -e "SELECT id AS 'ID', school_name AS 'School Name', admin_mobile AS 'Mobile', email AS 'Email', password AS 'Password', status AS 'Status' FROM schools;"
+            echo -e ""
+            read -p "Press Enter to return to Main Menu..."
+            ;;
+            
+        2)
+            echo -e "\n${YELLOW}[*] ➕ ADD A NEW SCHOOL TO SaaS ERP${RESET}"
+            echo -e "${CYAN}Please provide the details below. The system will auto-setup everything!${RESET}\n"
+            
+            read -p "👉 Enter School Name: " s_name
+            read -p "👉 Enter Admin Mobile Number: " s_mob
+            read -p "👉 Enter Admin Email ID: " s_email
+            read -p "👉 Enter Login Password: " s_pass
+            read -p "👉 Enter School Address: " s_add
+
+            if [ -n "$s_name" ] && [ -n "$s_mob" ]; then
+                echo -e "\n${YELLOW}Processing... Adding $s_name to database...${RESET}"
+                sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "INSERT INTO schools (school_name, admin_mobile, email, password, address) VALUES ('$s_name', '$s_mob', '$s_email', '$s_pass', '$s_add');"
+                
+                if [ $? -eq 0 ]; then
+                    echo -e "${GREEN}[+] Magic Done! '$s_name' is now Live on your ERP! 🚀${RESET}"
+                    echo -e "${CYAN}They can now login using Mobile: $s_mob and Password: $s_pass${RESET}"
+                else
+                    echo -e "${RED}[-] Failed to add school. Check database connection!${RESET}"
+                fi
+            else
+                echo -e "${RED}[-] School Name and Mobile Number cannot be empty! Cancelled.${RESET}"
+            fi
+            echo -e ""
+            read -p "Press Enter to return to Main Menu..."
+            ;;
+            
+        3)
+            echo -e "\n${YELLOW}[*] 🗄️ SMART DB TREE VIEW ($DB_NAME)${RESET}"
+            echo -e "${CYAN}Loading tables and counting live data...${RESET}\n"
+            
+            TABLES=$(sudo mysql -u $DB_USER -p$DB_PASS -N -e "SHOW TABLES IN $DB_NAME;")
+            
+            if [ -z "$TABLES" ]; then
+                echo -e "${RED}No tables found in $DB_NAME!${RESET}"
+            else
+                echo -e "📂 ${GREEN}$DB_NAME${RESET}"
+                for tb in $TABLES; do
+                    # Counting rows for each table to show data volume
+                    ROWS=$(sudo mysql -u $DB_USER -p$DB_PASS -N -e "SELECT COUNT(*) FROM $DB_NAME.$tb;")
+                    echo -e "   ├── 📄 ${CYAN}$tb${RESET} ${YELLOW}($ROWS records)${RESET}"
+                done
+                echo -e "   └── ✨ ${GREEN}End of Database${RESET}"
+            fi
+            echo -e ""
+            read -p "Press Enter to return to Main Menu..."
+            ;;
+
+        4)
+            echo -e "\n${YELLOW}[*] INITIAL SERVER SETUP (Auto Install Packages)...${RESET}"
+            sudo apt update -y && sudo apt upgrade -y
+            sudo apt install apache2 mysql-server php libapache2-mod-php php-mysql zip unzip curl wget -y
+            echo -e "${GREEN}[+] Server setup complete!${RESET}"
+            read -p "Press Enter to return..."
+            ;;
+
+        5)
+            echo -e "\n${YELLOW}[*] BACKUP CODEXAUM DATABASE${RESET}"
+            DATE=$(date +"%d-%b-%Y_%I-%M-%p")
+            BACKUP_FILE="/root/codexaum_backup_$DATE.sql"
+            sudo mysqldump -u $DB_USER -p$DB_PASS $DB_NAME > $BACKUP_FILE
+            echo -e "${GREEN}[+] Backup Saved to: $BACKUP_FILE${RESET}"
+            read -p "Press Enter to return..."
+            ;;
+            
+        0)
+            clear
+            echo -e "${GREEN}Exiting SaaS Master Manager. Your ERP is running safely. Have a great day, Prodip Bandhu! 👑${RESET}"
+            exit 0
+            ;;
+            
+        *)
+            echo -e "${RED}Invalid Option! Please select a valid number.${RESET}"
+            sleep 1 
+            ;;
+    esac
+done
