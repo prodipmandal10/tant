@@ -19,17 +19,18 @@ while true; do
     echo -e "${YELLOW}=====================================================${RESET}"
     echo -e "${MAGENTA}                 👑 MADE BY PRODIP 👑                ${RESET}"
     echo -e "${YELLOW}=====================================================${RESET}"
-    echo -e "${GREEN}      🌟 SaaS ERP MASTER MANAGER V4.0 🌟      ${RESET}"
+    echo -e "${GREEN}      🌟 SaaS ERP MASTER MANAGER V4.1 🌟      ${RESET}"
     echo -e "${BLUE}=====================================================${RESET}"
     echo -e "${CYAN}1) 🏫 SHOW ALL REGISTERED SCHOOLS (Live Data)${RESET}"
     echo -e "${CYAN}2) ➕ ADD A NEW SCHOOL (Auto SaaS Setup)${RESET}"
-    echo -e "${CYAN}3) 🗄️  SMART DB TREE VIEW (Easy Read)${RESET}"
+    echo -e "${GREEN}3) 🖼️  UPDATE SCHOOL LOGO (Smart Check)${RESET}"
+    echo -e "${CYAN}4) 🗄️  SMART DB TREE VIEW (Easy Read)${RESET}"
     echo -e "${BLUE}-----------------------------------------------------${RESET}"
-    echo -e "${YELLOW}4) 🛠️  INITIAL SERVER SETUP (Apache, PHP, MySQL)${RESET}"
-    echo -e "${YELLOW}5) 🚀 BACKUP CODEXAUM DATABASE (Export SQL)${RESET}"
+    echo -e "${YELLOW}5) 🛠️  INITIAL SERVER SETUP (Apache, PHP, MySQL)${RESET}"
+    echo -e "${YELLOW}6) 🚀 BACKUP CODEXAUM DATABASE (Export SQL)${RESET}"
     echo -e "${RED}0) ❌ EXIT${RESET}"
     echo -e "${BLUE}=====================================================${RESET}"
-    read -p "Select an option [0-5]: " choice
+    read -p "Select an option [0-6]: " choice
 
     case $choice in
         1)
@@ -66,8 +67,43 @@ while true; do
             echo -e ""
             read -p "Press Enter to return to Main Menu..."
             ;;
-            
+
         3)
+            echo -e "\n${YELLOW}[*] 🖼️ UPDATE SCHOOL LOGO${RESET}"
+            read -p "👉 Enter School ID (e.g., 1, 2, 3): " target_id
+            
+            if [ -n "$target_id" ]; then
+                # Check if the School ID exists in the database
+                EXISTS=$(sudo mysql -u $DB_USER -p$DB_PASS -N -e "SELECT COUNT(*) FROM $DB_NAME.schools WHERE id='$target_id';")
+                
+                if [ "$EXISTS" -eq 0 ]; then
+                    echo -e "${RED}[-] ERROR: School ID '$target_id' does NOT exist in the database! Update cancelled.${RESET}"
+                else
+                    echo -e "${GREEN}[+] School found!${RESET}"
+                    read -p "👉 Enter Logo Name (e.g., school3.jpg or logo2.png): " logo_name
+                    
+                    if [ -n "$logo_name" ]; then
+                        FULL_PATH="images/$logo_name"
+                        sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "UPDATE schools SET school_logo='$FULL_PATH' WHERE id='$target_id';"
+                        
+                        if [ $? -eq 0 ]; then
+                            echo -e "${GREEN}[+] Magic Done! Logo for School ID '$target_id' successfully updated to '$FULL_PATH' 🚀${RESET}"
+                        else
+                            echo -e "${RED}[-] Database update failed!${RESET}"
+                        fi
+                    else
+                        echo -e "${RED}[-] Logo name cannot be empty! Cancelled.${RESET}"
+                    fi
+                fi
+            else
+                echo -e "${RED}[-] Invalid ID! Cancelled.${RESET}"
+            fi
+            
+            echo -e ""
+            read -p "Press Enter to return to Main Menu..."
+            ;;
+            
+        4)
             echo -e "\n${YELLOW}[*] 🗄️ SMART DB TREE VIEW ($DB_NAME)${RESET}"
             echo -e "${CYAN}Loading tables and counting live data...${RESET}\n"
             
@@ -88,7 +124,7 @@ while true; do
             read -p "Press Enter to return to Main Menu..."
             ;;
 
-        4)
+        5)
             echo -e "\n${YELLOW}[*] INITIAL SERVER SETUP (Auto Install Packages)...${RESET}"
             sudo apt update -y && sudo apt upgrade -y
             sudo apt install apache2 mysql-server php libapache2-mod-php php-mysql zip unzip curl wget -y
@@ -96,7 +132,7 @@ while true; do
             read -p "Press Enter to return..."
             ;;
 
-        5)
+        6)
             echo -e "\n${YELLOW}[*] BACKUP CODEXAUM DATABASE${RESET}"
             DATE=$(date +"%d-%b-%Y_%I-%M-%p")
             BACKUP_FILE="/root/codexaum_backup_$DATE.sql"
