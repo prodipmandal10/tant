@@ -14,12 +14,15 @@ DB_USER="admin"
 DB_PASS="12345"
 DB_NAME="codexaum_erp"
 
+# 💥 AUTO-HEAL: Ensure marquee_text column exists
+sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "ALTER TABLE schools ADD COLUMN IF NOT EXISTS marquee_text VARCHAR(500) NULL;" 2>/dev/null
+
 while true; do
     clear
     echo -e "${YELLOW}=====================================================${RESET}"
     echo -e "${MAGENTA}                 👑 MADE BY PRODIP 👑                ${RESET}"
     echo -e "${YELLOW}=====================================================${RESET}"
-    echo -e "${GREEN}      🌟 SaaS ERP MASTER MANAGER V4.1 🌟      ${RESET}"
+    echo -e "${GREEN}       🌟 SaaS ERP MASTER MANAGER V4.2 🌟       ${RESET}"
     echo -e "${BLUE}=====================================================${RESET}"
     echo -e "${CYAN}1) 🏫 SHOW ALL REGISTERED SCHOOLS (Live Data)${RESET}"
     echo -e "${CYAN}2) ➕ ADD A NEW SCHOOL (Auto SaaS Setup)${RESET}"
@@ -28,14 +31,16 @@ while true; do
     echo -e "${BLUE}-----------------------------------------------------${RESET}"
     echo -e "${YELLOW}5) 🛠️  INITIAL SERVER SETUP (Apache, PHP, MySQL)${RESET}"
     echo -e "${YELLOW}6) 🚀 BACKUP CODEXAUM DATABASE (Export SQL)${RESET}"
+    echo -e "${BLUE}-----------------------------------------------------${RESET}"
+    echo -e "${MAGENTA}7) 📜 SET DASHBOARD MARQUEE (For Specific School)${RESET}"
+    echo -e "${MAGENTA}8) 📢 BROADCAST MESSAGE TO ALL (Emergency/Support)${RESET}"
     echo -e "${RED}0) ❌ EXIT${RESET}"
     echo -e "${BLUE}=====================================================${RESET}"
-    read -p "Select an option [0-6]: " choice
+    read -p "Select an option [0-8]: " choice
 
     case $choice in
         1)
             echo -e "\n${YELLOW}[*] 🏫 LIST OF ALL REGISTERED SCHOOLS:${RESET}"
-            # -t flag is used for beautiful table layout in terminal
             sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -t -e "SELECT id AS 'ID', school_name AS 'School Name', admin_mobile AS 'Mobile', email AS 'Email', password AS 'Password', status AS 'Status' FROM schools;"
             echo -e ""
             read -p "Press Enter to return to Main Menu..."
@@ -73,11 +78,10 @@ while true; do
             read -p "👉 Enter School ID (e.g., 1, 2, 3): " target_id
             
             if [ -n "$target_id" ]; then
-                # Check if the School ID exists in the database
                 EXISTS=$(sudo mysql -u $DB_USER -p$DB_PASS -N -e "SELECT COUNT(*) FROM $DB_NAME.schools WHERE id='$target_id';")
                 
                 if [ "$EXISTS" -eq 0 ]; then
-                    echo -e "${RED}[-] ERROR: School ID '$target_id' does NOT exist in the database! Update cancelled.${RESET}"
+                    echo -e "${RED}[-] ERROR: School ID '$target_id' does NOT exist!${RESET}"
                 else
                     echo -e "${GREEN}[+] School found!${RESET}"
                     read -p "👉 Enter Logo Name (e.g., school3.jpg or logo2.png): " logo_name
@@ -85,12 +89,7 @@ while true; do
                     if [ -n "$logo_name" ]; then
                         FULL_PATH="images/$logo_name"
                         sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "UPDATE schools SET school_logo='$FULL_PATH' WHERE id='$target_id';"
-                        
-                        if [ $? -eq 0 ]; then
-                            echo -e "${GREEN}[+] Magic Done! Logo for School ID '$target_id' successfully updated to '$FULL_PATH' 🚀${RESET}"
-                        else
-                            echo -e "${RED}[-] Database update failed!${RESET}"
-                        fi
+                        echo -e "${GREEN}[+] Magic Done! Logo updated to '$FULL_PATH' 🚀${RESET}"
                     else
                         echo -e "${RED}[-] Logo name cannot be empty! Cancelled.${RESET}"
                     fi
@@ -98,15 +97,12 @@ while true; do
             else
                 echo -e "${RED}[-] Invalid ID! Cancelled.${RESET}"
             fi
-            
-            echo -e ""
             read -p "Press Enter to return to Main Menu..."
             ;;
             
         4)
             echo -e "\n${YELLOW}[*] 🗄️ SMART DB TREE VIEW ($DB_NAME)${RESET}"
             echo -e "${CYAN}Loading tables and counting live data...${RESET}\n"
-            
             TABLES=$(sudo mysql -u $DB_USER -p$DB_PASS -N -e "SHOW TABLES IN $DB_NAME;")
             
             if [ -z "$TABLES" ]; then
@@ -114,13 +110,11 @@ while true; do
             else
                 echo -e "📂 ${GREEN}$DB_NAME${RESET}"
                 for tb in $TABLES; do
-                    # Counting rows for each table to show data volume
                     ROWS=$(sudo mysql -u $DB_USER -p$DB_PASS -N -e "SELECT COUNT(*) FROM $DB_NAME.$tb;")
                     echo -e "   ├── 📄 ${CYAN}$tb${RESET} ${YELLOW}($ROWS records)${RESET}"
                 done
                 echo -e "   └── ✨ ${GREEN}End of Database${RESET}"
             fi
-            echo -e ""
             read -p "Press Enter to return to Main Menu..."
             ;;
 
@@ -138,6 +132,52 @@ while true; do
             BACKUP_FILE="/root/codexaum_backup_$DATE.sql"
             sudo mysqldump -u $DB_USER -p$DB_PASS $DB_NAME > $BACKUP_FILE
             echo -e "${GREEN}[+] Backup Saved to: $BACKUP_FILE${RESET}"
+            read -p "Press Enter to return..."
+            ;;
+
+        7)
+            echo -e "\n${MAGENTA}[*] 📜 SET DASHBOARD MARQUEE (For Specific School)${RESET}"
+            sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -t -e "SELECT id AS 'ID', school_name AS 'School Name' FROM schools;"
+            echo -e ""
+            read -p "👉 Enter the School ID to update: " target_id
+            
+            if [ -n "$target_id" ]; then
+                EXISTS=$(sudo mysql -u $DB_USER -p$DB_PASS -N -e "SELECT COUNT(*) FROM $DB_NAME.schools WHERE id='$target_id';")
+                if [ "$EXISTS" -eq 0 ]; then
+                    echo -e "${RED}[-] ERROR: School ID '$target_id' does NOT exist!${RESET}"
+                else
+                    echo -e "${GREEN}[+] School Selected! Please enter the details for the Marquee:${RESET}"
+                    read -p "👉 School Name: " mq_name
+                    read -p "👉 Address: " mq_add
+                    read -p "👉 ESTD Year: " mq_estd
+                    read -p "👉 Your Brand (e.g., CODEXAUM): " mq_brand
+                    
+                    # Formatting the text beautifully with emojis and dots
+                    FORMATTED_TEXT="🏫 $mq_name &nbsp;✦&nbsp; 📍 $mq_add &nbsp;✦&nbsp; 🗓️ ESTD: $mq_estd &nbsp;✦&nbsp; 💻 Powered by $mq_brand"
+                    
+                    sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "UPDATE schools SET marquee_text='$FORMATTED_TEXT' WHERE id='$target_id';"
+                    echo -e "${GREEN}[+] Success! The scrolling text has been updated for this school. 🚀${RESET}"
+                fi
+            else
+                echo -e "${RED}[-] Invalid ID! Cancelled.${RESET}"
+            fi
+            read -p "Press Enter to return..."
+            ;;
+
+        8)
+            echo -e "\n${MAGENTA}[*] 📢 BROADCAST MESSAGE TO ALL SCHOOLS${RESET}"
+            echo -e "${CYAN}This message will override all school marquees. Perfect for emergency tech support!${RESET}\n"
+            
+            echo -e "Example: ANY TECHNICAL PROBLEM CALL 📞 9876543210, 8765432109"
+            read -p "👉 Enter your Broadcast Message: " broadcast_msg
+            
+            if [ -n "$broadcast_msg" ]; then
+                FORMATTED_MSG="⚠️ <b>$broadcast_msg</b> ⚠️"
+                sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "UPDATE schools SET marquee_text='$FORMATTED_MSG';"
+                echo -e "${GREEN}[+] BROADCAST SENT! All schools will now see your message on their dashboard. 🚀${RESET}"
+            else
+                echo -e "${RED}[-] Message cannot be empty! Cancelled.${RESET}"
+            fi
             read -p "Press Enter to return..."
             ;;
             
