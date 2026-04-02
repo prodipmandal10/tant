@@ -14,15 +14,16 @@ DB_USER="admin"
 DB_PASS="12345"
 DB_NAME="codexaum_erp"
 
-# 💥 AUTO-HEAL: Ensure marquee_text column exists
+# 💥 AUTO-HEAL: Ensure marquee columns exist
 sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "ALTER TABLE schools ADD COLUMN IF NOT EXISTS marquee_text VARCHAR(500) NULL;" 2>/dev/null
+sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "ALTER TABLE schools ADD COLUMN IF NOT EXISTS broadcast_msg VARCHAR(500) NULL;" 2>/dev/null
 
 while true; do
     clear
     echo -e "${YELLOW}=====================================================${RESET}"
     echo -e "${MAGENTA}                 👑 MADE BY PRODIP 👑                ${RESET}"
     echo -e "${YELLOW}=====================================================${RESET}"
-    echo -e "${GREEN}       🌟 SaaS ERP MASTER MANAGER V4.2 🌟       ${RESET}"
+    echo -e "${GREEN}       🌟 SaaS ERP MASTER MANAGER V4.3 🌟       ${RESET}"
     echo -e "${BLUE}=====================================================${RESET}"
     echo -e "${CYAN}1) 🏫 SHOW ALL REGISTERED SCHOOLS (Live Data)${RESET}"
     echo -e "${CYAN}2) ➕ ADD A NEW SCHOOL (Auto SaaS Setup)${RESET}"
@@ -152,7 +153,6 @@ while true; do
                     read -p "👉 ESTD Year: " mq_estd
                     read -p "👉 Your Brand (e.g., CODEXAUM): " mq_brand
                     
-                    # Formatting the text beautifully with emojis and dots
                     FORMATTED_TEXT="🏫 $mq_name &nbsp;✦&nbsp; 📍 $mq_add &nbsp;✦&nbsp; 🗓️ ESTD: $mq_estd &nbsp;✦&nbsp; 💻 Powered by $mq_brand"
                     
                     sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "UPDATE schools SET marquee_text='$FORMATTED_TEXT' WHERE id='$target_id';"
@@ -166,17 +166,18 @@ while true; do
 
         8)
             echo -e "\n${MAGENTA}[*] 📢 BROADCAST MESSAGE TO ALL SCHOOLS${RESET}"
-            echo -e "${CYAN}This message will override all school marquees. Perfect for emergency tech support!${RESET}\n"
+            echo -e "${CYAN}This message will scroll alongside the school's own marquee.${RESET}\n"
             
-            echo -e "Example: ANY TECHNICAL PROBLEM CALL 📞 9876543210, 8765432109"
-            read -p "👉 Enter your Broadcast Message: " broadcast_msg
+            echo -e "Example: ANY TECHNICAL PROBLEM CALL 📞 9876543210"
+            read -p "👉 Enter your Broadcast Message (Leave blank and press Enter to CLEAR/REMOVE broadcast): " broadcast_msg
             
             if [ -n "$broadcast_msg" ]; then
                 FORMATTED_MSG="⚠️ <b>$broadcast_msg</b> ⚠️"
-                sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "UPDATE schools SET marquee_text='$FORMATTED_MSG';"
-                echo -e "${GREEN}[+] BROADCAST SENT! All schools will now see your message on their dashboard. 🚀${RESET}"
+                sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "UPDATE schools SET broadcast_msg='$FORMATTED_MSG';"
+                echo -e "${GREEN}[+] BROADCAST SENT! All schools will now see your message alongside their school names. 🚀${RESET}"
             else
-                echo -e "${RED}[-] Message cannot be empty! Cancelled.${RESET}"
+                sudo mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "UPDATE schools SET broadcast_msg=NULL;"
+                echo -e "${GREEN}[+] BROADCAST REMOVED successfully! Now only school details will scroll. 🧹${RESET}"
             fi
             read -p "Press Enter to return..."
             ;;
